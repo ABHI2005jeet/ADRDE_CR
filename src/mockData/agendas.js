@@ -1,0 +1,42 @@
+export const agendas = [
+  {
+    id: 'AG-501',
+    topic: 'Aerostat envelope inspection updates',
+    department: 'Aerodynamic Systems',
+    priority: 'High',
+    status: 'Approved',
+    meetingId: 'MAC-203',
+  },
+  {
+    id: 'AG-502',
+    topic: 'Ground handling equipment calibration',
+    department: 'Instrumentation',
+    priority: 'Medium',
+    status: 'Pending',
+    meetingId: 'MAC-203',
+  },
+  {
+    id: 'AG-503',
+    topic: 'Payload interface test checklist',
+    department: 'Payload Integration',
+    priority: 'High',
+    status: 'Pending',
+    meetingId: 'MAC-204',
+  },
+  {
+    id: 'AG-504',
+    topic: 'Trial report observations and closure notes',
+    department: 'Quality Assurance',
+    priority: 'Critical',
+    status: 'Completed',
+    meetingId: 'MAC-206',
+  },
+  {
+    id: 'AG-505',
+    topic: 'Vendor response and spares timeline',
+    department: 'Procurement',
+    priority: 'Low',
+    status: 'Approved',
+    meetingId: 'MAC-205',
+  },
+];
