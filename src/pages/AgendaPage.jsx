@@ -33,7 +33,7 @@ export default function AgendaPage() {
 
   const approveAgenda = (agendaId) => {
     setAgendas((items) => items.map((agenda) => (agenda.id === agendaId ? { ...agenda, status: 'Approved' } : agenda)));
-    addActivity(`Agenda ${agendaId} approved`, currentUser.role);
+    addActivity(`Agenda ${agendaId} approved`, currentUser.name);
   };
 
   return (
@@ -44,7 +44,7 @@ export default function AgendaPage() {
         title="Agenda Management"
       />
 
-      {!canApprove ? <PermissionNotice>Agenda approval is available to Admin and Para Head roles.</PermissionNotice> : null}
+      {!canApprove ? <PermissionNotice>Agenda approval is available to Para Head in this prototype.</PermissionNotice> : null}
 
       <section className="surface mt-6 overflow-hidden">
         <div className="grid gap-3 border-b border-slate-200 p-5 dark:border-slate-800 md:grid-cols-[1fr_180px_180px]">

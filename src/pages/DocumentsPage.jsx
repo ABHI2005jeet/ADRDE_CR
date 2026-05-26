@@ -20,14 +20,28 @@ const statusTone = {
   Pending: 'warning',
 };
 
-export default function DocumentsPage() {
-  const { currentUser, documents, setDocuments, addActivity } = useApp();
+export default function DocumentsPage({ mode = 'view' }) {
+  const { currentUser, documents, searchQuery, setDocuments, addActivity } = useApp();
   const fileInputRef = useRef(null);
   const [previewDoc, setPreviewDoc] = useState(null);
 
   const canUpload = can(currentUser, 'upload_document');
   const canPreview = can(currentUser, 'preview_document');
   const canDownload = can(currentUser, 'download_document');
+  const query = searchQuery.trim().toLowerCase();
+
+  const visibleDocuments = documents.filter((doc) => {
+    const isArchived = doc.status === 'Archived';
+    if (mode === 'archive') return isArchived;
+    if (mode === 'upload' || mode === 'view') return !isArchived;
+    return true;
+  }).filter((doc) => {
+    if (!query) return true;
+    return `${doc.id} ${doc.name} ${doc.type}`.toLowerCase().includes(query);
+  });
+
+  const pageTitle =
+    mode === 'upload' ? 'Upload Documents' : mode === 'archive' ? 'Document Archive' : 'View Documents';
 
   const handleUpload = (event) => {
     const file = event.target.files?.[0];
@@ -48,8 +62,15 @@ export default function DocumentsPage() {
     };
 
     setDocuments((items) => [newDoc, ...items]);
-    addActivity(`Document uploaded: ${file.name}`, currentUser.role);
+    addActivity(`Document uploaded: ${file.name}`, currentUser.name);
     event.target.value = '';
+  };
+
+  const archiveDoc = (docId) => {
+    setDocuments((items) =>
+      items.map((doc) => (doc.id === docId ? { ...doc, status: 'Archived' } : doc)),
+    );
+    addActivity('Document archived', currentUser.name);
   };
 
   const downloadDoc = (doc) => {
@@ -68,10 +89,10 @@ export default function DocumentsPage() {
     <div>
       <PageHeader
         eyebrow="Records"
-        title="Document Center"
-        description="Upload, review, and manage MAC meeting documents"
+        title={pageTitle}
+        description="Upload, review, and manage internal documents"
         actions={
-          canUpload ? (
+          canUpload && mode !== 'archive' ? (
             <>
               <input
                 ref={fileInputRef}
@@ -104,7 +125,7 @@ export default function DocumentsPage() {
             </tr>
           </thead>
           <tbody>
-            {documents.map((doc) => (
+            {visibleDocuments.map((doc) => (
               <tr key={doc.id} className="border-b border-slate-100 dark:border-slate-800">
                 <td className="px-4 py-3 font-medium">{doc.name}</td>
                 <td className="px-4 py-3">{doc.type}</td>
@@ -132,6 +153,15 @@ export default function DocumentsPage() {
                         Download
                       </button>
                     )}
+                    {mode === 'view' && doc.status !== 'Archived' ? (
+                      <button
+                        type="button"
+                        className="text-slate-600 hover:underline dark:text-slate-300"
+                        onClick={() => archiveDoc(doc.id)}
+                      >
+                        Archive
+                      </button>
+                    ) : null}
                   </div>
                 </td>
               </tr>

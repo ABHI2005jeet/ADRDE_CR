@@ -7,21 +7,37 @@ const typeTone = {
   Agenda: 'success',
   Action: 'warning',
   Document: 'neutral',
+  Inventory: 'neutral',
 };
 
-export default function NotificationsPage() {
-  const { notifications } = useApp();
+const filterMeta = {
+  alerts: { title: 'Alerts', category: 'Alerts' },
+  updates: { title: 'Updates', category: 'Updates' },
+  messages: { title: 'Messages', category: 'Messages' },
+};
+
+export default function NotificationsPage({ filter = 'alerts' }) {
+  const { notifications, searchQuery } = useApp();
+  const meta = filterMeta[filter] || filterMeta.alerts;
+  const query = searchQuery.trim().toLowerCase();
+
+  const filtered = notifications.filter((item) => {
+    const matchesCategory = item.category === meta.category;
+    if (!matchesCategory) return false;
+    if (!query) return true;
+    return `${item.title} ${item.message} ${item.type}`.toLowerCase().includes(query);
+  });
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <PageHeader
-        eyebrow="Alerts"
-        title="Notifications"
-        description="System alerts for meetings, agendas, deadlines, and documents"
+        eyebrow="Notifications"
+        title={meta.title}
+        description="System alerts, workflow updates, and internal messages"
       />
 
       <div className="space-y-3">
-        {notifications.map((item) => (
+        {filtered.map((item) => (
           <article key={item.id} className="surface flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -33,6 +49,7 @@ export default function NotificationsPage() {
             <p className="shrink-0 text-xs text-slate-500">{item.time}</p>
           </article>
         ))}
+        {!filtered.length ? <p className="text-sm text-slate-500">No notifications in this category.</p> : null}
       </div>
     </div>
   );

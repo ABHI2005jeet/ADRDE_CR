@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import logoUrl from '../assets/adrde-logo.svg';
+import adrdeLogo from '../assets/adrde-logo.png';
+import drdoLogo from '../assets/drdo-logo.svg';
 import Button from '../components/ui/Button.jsx';
 import { useApp } from '../context/AppContext.jsx';
-
-const roles = ['Admin', 'Para Head', 'Staff', 'Employee'];
+import { loginRoles } from '../services/authService.js';
 
 export default function LoginPage() {
   const { login, theme, toggleTheme } = useApp();
   const [form, setForm] = useState({
-    username: 'ADRDE-ADM-001',
-    password: 'password',
-    role: 'Admin',
+    name: '',
+    employeeId: '',
+    password: '',
+    role: 'Scientist',
   });
 
   const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
@@ -27,10 +28,11 @@ export default function LoginPage() {
           <div className="w-full max-w-md animate-slide-up">
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src={logoUrl} alt="ADRDE logo placeholder" className="h-14 w-14 rounded-lg shadow-soft" />
+                <img src={drdoLogo} alt="DRDO logo placeholder" className="h-12 w-12 rounded-lg border border-slate-200 bg-white p-0.5" />
+                <img src={adrdeLogo} alt="ADRDE logo" className="h-12 w-12 rounded-full border border-slate-200 bg-white object-cover" />
                 <div>
                   <p className="text-lg font-bold text-slate-950 dark:text-white">ADRDE Agra</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">MAC Agenda Dashboard</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Dashboard Portal</p>
                 </div>
               </div>
               <Button icon={theme === 'dark' ? 'sun' : 'moon'} iconOnly onClick={toggleTheme} size="icon" variant="secondary">
@@ -42,17 +44,33 @@ export default function LoginPage() {
               <div className="mb-6">
                 <p className="label mb-2">Secure prototype access</p>
                 <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Sign in</h1>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  Enter your details below. Your workspace is saved locally per Employee ID (password is not stored).
+                </p>
               </div>
 
               <div className="space-y-4">
                 <label className="block">
-                  <span className="label mb-2 block">Username / Employee ID</span>
+                  <span className="label mb-2 block">Name</span>
                   <input
                     className="field"
-                    onChange={(event) => updateField('username', event.target.value)}
-                    placeholder="ADRDE-EMP-000"
+                    onChange={(event) => updateField('name', event.target.value)}
+                    placeholder="Your full name"
+                    required
                     type="text"
-                    value={form.username}
+                    value={form.name}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="label mb-2 block">Employee ID</span>
+                  <input
+                    className="field"
+                    onChange={(event) => updateField('employeeId', event.target.value)}
+                    placeholder="ADRDE-EMP-000"
+                    required
+                    type="text"
+                    value={form.employeeId}
                   />
                 </label>
 
@@ -62,6 +80,7 @@ export default function LoginPage() {
                     className="field"
                     onChange={(event) => updateField('password', event.target.value)}
                     placeholder="Enter password"
+                    required
                     type="password"
                     value={form.password}
                   />
@@ -74,7 +93,7 @@ export default function LoginPage() {
                     onChange={(event) => updateField('role', event.target.value)}
                     value={form.role}
                   >
-                    {roles.map((role) => (
+                    {loginRoles.map((role) => (
                       <option key={role} value={role}>
                         {role}
                       </option>
@@ -92,17 +111,15 @@ export default function LoginPage() {
 
         <section className="hidden bg-adrde-navy px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="max-w-xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-100">Internal prototype</p>
-            <h2 className="mt-5 text-4xl font-bold leading-tight">
-              Meeting agenda control for structured MAC reviews.
-            </h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-100">ADRDE Agra · DRDO</p>
+            <h2 className="mt-5 text-4xl font-bold leading-tight">Internal monitoring and workflow management portal</h2>
             <p className="mt-5 text-base leading-7 text-blue-100">
-              Manage schedules, agenda approvals, document flow, reports, notifications, and role-based oversight
-              from a single responsive workspace.
+              Meetings, documents, letters, inventory, reports, and notifications in a single responsive government-style
+              workspace with role-aware mock permissions.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {['Meetings', 'Agendas', 'Reports'].map((item) => (
+            {['Meetings', 'Documents', 'Inventory'].map((item) => (
               <div key={item} className="rounded-lg border border-white/15 bg-white/10 p-4">
                 <p className="text-sm font-semibold">{item}</p>
               </div>

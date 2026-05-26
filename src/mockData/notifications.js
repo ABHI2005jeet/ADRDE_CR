@@ -5,6 +5,7 @@ export const notifications = [
     message: 'MAC-203 venue updated to Conference Hall A.',
     time: 'Today, 09:15',
     type: 'Meeting',
+    category: 'Alerts',
   },
   {
     id: 'N-102',
@@ -12,6 +13,7 @@ export const notifications = [
     message: 'AG-501 approved by Para Head.',
     time: 'Yesterday, 16:40',
     type: 'Agenda',
+    category: 'Updates',
   },
   {
     id: 'N-103',
@@ -19,6 +21,7 @@ export const notifications = [
     message: 'Payload checklist review is due within 48 hours.',
     time: 'Yesterday, 11:10',
     type: 'Action',
+    category: 'Alerts',
   },
   {
     id: 'N-104',
@@ -26,5 +29,14 @@ export const notifications = [
     message: 'Field-trial-site-layout.png added to the document center.',
     time: '22 May 2026, 18:20',
     type: 'Document',
+    category: 'Messages',
+  },
+  {
+    id: 'N-105',
+    title: 'Inventory request pending',
+    message: 'Calibration kit replenishment awaiting approval.',
+    time: '22 May 2026, 10:05',
+    type: 'Inventory',
+    category: 'Updates',
   },
 ];

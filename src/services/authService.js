@@ -1,39 +1,30 @@
-export const profileByRole = {
-  Admin: {
-    name: 'Dr. Ananya Rao',
-    employeeId: 'ADRDE-ADM-001',
-    department: 'MAC Secretariat',
-    email: 'admin.mac@adrde.local',
-    phone: '+91-562-240-0101',
-  },
-  'Para Head': {
-    name: 'Group Captain S. Mehra',
-    employeeId: 'ADRDE-PH-014',
-    department: 'Aerodynamic Systems',
-    email: 'parahead@adrde.local',
-    phone: '+91-562-240-0144',
-  },
-  Staff: {
-    name: 'Kavita Sharma',
-    employeeId: 'ADRDE-STF-088',
-    department: 'Technical Coordination',
-    email: 'staff.mac@adrde.local',
-    phone: '+91-562-240-0188',
-  },
-  Employee: {
-    name: 'Rohan Verma',
-    employeeId: 'ADRDE-EMP-246',
-    department: 'Instrumentation',
-    email: 'employee@adrde.local',
-    phone: '+91-562-240-0246',
-  },
+export const loginRoles = [
+  'Para Head',
+  'Scientist',
+  'Technical Engineer',
+  'Staff',
+  'Intern',
+  'Contractual Worker',
+];
+
+const departmentByRole = {
+  'Para Head': 'Aerodynamic Systems',
+  Scientist: 'Research & Development',
+  'Technical Engineer': 'Technical Coordination',
+  Staff: 'Administration',
+  Intern: 'Instrumentation',
+  'Contractual Worker': 'Logistics & Stores',
 };
 
-export function fakeLogin({ username, role }) {
-  const profile = profileByRole[role] || profileByRole.Employee;
+/** Build session user from login form — name comes from user input only */
+export function buildUserFromLogin({ name, employeeId, role }) {
+  const trimmedId = employeeId?.trim() || '';
+  const trimmedName = name?.trim() || 'User';
   return {
-    ...profile,
-    employeeId: username?.trim() || profile.employeeId,
-    role,
+    name: trimmedName,
+    employeeId: trimmedId,
+    role: role || 'Staff',
+    department: departmentByRole[role] || 'General Administration',
+    email: trimmedId ? `${trimmedId.toLowerCase()}@adrde.local` : '',
   };
 }

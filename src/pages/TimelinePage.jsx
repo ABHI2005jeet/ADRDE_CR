@@ -19,7 +19,7 @@ export default function TimelinePage() {
   return (
     <div className="animate-fade-in">
       <PageHeader
-        description="Visual MAC workflow status from meeting creation through final report generation."
+        description="Visual workflow status from meeting creation through final report generation."
         eyebrow="Lifecycle"
         title="Meeting Timeline"
       />

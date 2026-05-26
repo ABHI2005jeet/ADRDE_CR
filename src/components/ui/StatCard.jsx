@@ -9,11 +9,18 @@ const toneStyles = {
 };
 
 /** Dashboard metric card with optional icon and tone */
-export default function StatCard({ label, value, helper, hint, icon, tone = 'navy' }) {
+export default function StatCard({ label, value, helper, hint, icon, onClick, tone = 'navy' }) {
   const description = helper || hint;
+  const Tag = onClick ? 'button' : 'article';
 
   return (
-    <article className="surface animate-slide-up p-5">
+    <Tag
+      className={`surface animate-slide-up w-full p-5 text-left transition duration-200 ${
+        onClick ? 'hover:border-adrde-blue/40 hover:shadow-md' : ''
+      }`}
+      onClick={onClick}
+      type={onClick ? 'button' : undefined}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="label">{label}</p>
@@ -30,6 +37,6 @@ export default function StatCard({ label, value, helper, hint, icon, tone = 'nav
           </div>
         )}
       </div>
-    </article>
+    </Tag>
   );
 }

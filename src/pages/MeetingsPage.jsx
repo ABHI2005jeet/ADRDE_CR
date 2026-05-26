@@ -17,18 +17,31 @@ const emptyForm = {
   description: '',
 };
 
-export default function MeetingsPage() {
-  const { addActivity, currentUser, meetings, setMeetings } = useApp();
+export default function MeetingsPage({ mode = 'all' }) {
+  const { addActivity, currentUser, meetings, searchQuery, setMeetings } = useApp();
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const canCreate = can(currentUser, 'create_meeting');
   const canEdit = can(currentUser, 'edit_meeting');
   const canDelete = can(currentUser, 'delete_meeting');
 
-  const sortedMeetings = useMemo(
-    () => [...meetings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)),
-    [meetings],
-  );
+  const today = new Date('2026-05-23T00:00:00');
+  const query = searchQuery.trim().toLowerCase();
+
+  const sortedMeetings = useMemo(() => {
+    return [...meetings]
+      .filter((meeting) => {
+        if (mode === 'upcoming' && new Date(`${meeting.date}T00:00:00`) < today) return false;
+        if (!query) return true;
+        const haystack = `${meeting.id} ${meeting.title} ${meeting.venue} ${meeting.description}`.toLowerCase();
+        return haystack.includes(query);
+      })
+      .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  }, [meetings, mode, query, today]);
+
+  const showForm = mode === 'create' || mode === 'all';
+  const pageTitle =
+    mode === 'create' ? 'Create Meeting' : mode === 'upcoming' ? 'Upcoming Meetings' : 'Meeting Management';
 
   const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
@@ -44,7 +57,7 @@ export default function MeetingsPage() {
 
     if (editingId) {
       setMeetings((items) => items.map((meeting) => (meeting.id === editingId ? { ...meeting, ...form } : meeting)));
-      addActivity(`Meeting ${editingId} updated`);
+      addActivity(`Meeting ${editingId} updated`, currentUser.name);
     } else {
       setMeetings((items) => [
         {
@@ -53,7 +66,7 @@ export default function MeetingsPage() {
         },
         ...items,
       ]);
-      addActivity(`Meeting ${form.id} created`);
+      addActivity(`Meeting #${form.id.replace(/\D/g, '').slice(-3) || form.id} created`, currentUser.name);
     }
 
     resetForm();
@@ -74,21 +87,24 @@ export default function MeetingsPage() {
 
   const deleteMeeting = (meetingId) => {
     setMeetings((items) => items.filter((meeting) => meeting.id !== meetingId));
-    addActivity(`Meeting ${meetingId} deleted`);
+    addActivity(`Meeting ${meetingId} deleted`, currentUser.name);
     if (editingId === meetingId) resetForm();
   };
 
   return (
     <div className="animate-fade-in">
       <PageHeader
-        description="Create, update, and maintain MAC meeting schedules with priority and venue details."
+        description="Create, update, and maintain meeting schedules with priority and venue details."
         eyebrow="Scheduling"
-        title="Meeting Management"
+        title={pageTitle}
       />
 
-      {!canCreate ? <PermissionNotice>Meeting creation is available to Admin users in this prototype.</PermissionNotice> : null}
+      {!canCreate && showForm ? (
+        <PermissionNotice>Meeting creation is available to Scientist and Technical Engineer roles in this prototype.</PermissionNotice>
+      ) : null}
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className={`mt-6 grid gap-6 ${showForm ? 'xl:grid-cols-[0.9fr_1.1fr]' : ''}`}>
+        {showForm ? (
         <form className="surface p-5" onSubmit={handleSubmit}>
           <div className="mb-5 flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-slate-950 dark:text-white">
@@ -152,6 +168,7 @@ export default function MeetingsPage() {
             {editingId ? 'Update' : 'Create'}
           </Button>
         </form>
+        ) : null}
 
         <section className="space-y-4">
           {sortedMeetings.map((meeting) => (

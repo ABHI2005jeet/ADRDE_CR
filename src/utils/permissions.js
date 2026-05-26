@@ -1,5 +1,16 @@
 export const rolePermissions = {
-  Admin: [
+  'Para Head': [
+    'view_meetings',
+    'manage_users',
+    'approve_agenda',
+    'approve_letter',
+    'preview_document',
+    'view_reports',
+    'download_reports',
+    'view_notifications',
+    'manage_inventory',
+  ],
+  Scientist: [
     'view_meetings',
     'create_meeting',
     'edit_meeting',
@@ -8,30 +19,41 @@ export const rolePermissions = {
     'upload_document',
     'preview_document',
     'download_document',
-    'approve_agenda',
     'view_reports',
     'download_reports',
-    'view_tasks',
+    'create_letter',
+    'view_notifications',
   ],
-  'Para Head': [
-    'approve_agenda',
-    'preview_document',
-    'view_reports',
-    'download_reports',
+  'Technical Engineer': [
     'view_meetings',
+    'create_meeting',
+    'upload_document',
+    'preview_document',
+    'download_document',
+    'manage_inventory',
+    'create_letter',
+    'view_tasks',
+    'view_notifications',
   ],
   Staff: [
     'view_meetings',
-    'view_reports',
     'preview_document',
     'download_document',
+    'create_letter',
+    'view_reports',
+    'view_notifications',
     'view_tasks',
     'manage_tasks',
   ],
-  Employee: [
+  Intern: [
     'view_meetings',
     'preview_document',
+    'view_notifications',
     'submit_suggestion',
+  ],
+  'Contractual Worker': [
+    'view_meetings',
+    'manage_inventory',
     'view_notifications',
   ],
 };
@@ -42,6 +64,7 @@ export function can(user, permission) {
 }
 
 export const permissionLabels = {
+  view_meetings: 'View meetings',
   create_meeting: 'Create meetings',
   edit_meeting: 'Edit meetings',
   delete_meeting: 'Delete meetings',
@@ -50,6 +73,9 @@ export const permissionLabels = {
   preview_document: 'Preview documents',
   download_document: 'Download documents',
   approve_agenda: 'Approve agendas',
+  approve_letter: 'Approve letters',
+  create_letter: 'Create letters',
+  manage_inventory: 'Manage inventory',
   view_reports: 'View reports',
   download_reports: 'Download reports',
   view_tasks: 'View tasks',

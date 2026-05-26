@@ -20,4 +20,11 @@ export const documents = [
     uploadDate: '2026-05-22',
     status: 'Pending',
   },
+  {
+    id: 'DOC-299',
+    name: 'FY25-annual-review.pdf',
+    type: 'PDF',
+    uploadDate: '2025-12-18',
+    status: 'Archived',
+  },
 ];

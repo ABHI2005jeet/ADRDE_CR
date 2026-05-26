@@ -2,8 +2,8 @@ export const users = [
   {
     id: 'USR-001',
     name: 'Dr. Ananya Rao',
-    role: 'Admin',
-    department: 'MAC Secretariat',
+    role: 'Scientist',
+    department: 'Research & Development',
     status: 'Active',
   },
   {
@@ -16,15 +16,29 @@ export const users = [
   {
     id: 'USR-003',
     name: 'Kavita Sharma',
-    role: 'Staff',
+    role: 'Technical Engineer',
     department: 'Technical Coordination',
     status: 'Active',
   },
   {
     id: 'USR-004',
     name: 'Rohan Verma',
-    role: 'Employee',
+    role: 'Staff',
+    department: 'Administration',
+    status: 'Active',
+  },
+  {
+    id: 'USR-005',
+    name: 'Priya Nair',
+    role: 'Intern',
     department: 'Instrumentation',
+    status: 'Active',
+  },
+  {
+    id: 'USR-006',
+    name: 'Suresh Yadav',
+    role: 'Contractual Worker',
+    department: 'Logistics & Stores',
     status: 'Active',
   },
 ];

@@ -1,19 +1,18 @@
-# ADRDE Agra - MAC Meeting Agenda Dashboard
+# ADRDE Agra Dashboard Portal
 
-A professional React + Tailwind CSS prototype for an internal ADRDE meeting agenda management module. The app currently uses mock JSON-style data only and includes backend placeholder folders for future API integration.
+A professional React + Tailwind CSS prototype for the ADRDE Agra internal monitoring and workflow management portal. The app uses mock JSON-style data only and includes backend placeholder folders for future API integration.
 
 ## Features
 
-- Dummy login with role selection
-- Role-aware navigation and actions
-- Dashboard metrics, charts, notifications, and activity feed
-- Meeting creation, editing, and deletion using mock state
+- Dummy login with Employee ID, password, and role selection
+- Role-aware navigation, actions, and mock role switching from profile
+- Horizontal government-style top navigation with dropdown menus
+- Dashboard metrics, charts, notifications, calendar, timeline, and activity feed
+- Working mock flows: meeting create, document upload, letters, inventory, search/filters
 - Agenda search, filters, and approval workflow
-- Monthly calendar with meeting-date highlights
-- Visual meeting workflow timeline
-- Mock document upload center
+- Letters (incoming, outgoing, draft) and inventory modules
+- User management, roles, and permissions views
 - Downloadable PDF-style meeting report generator
-- Profile and role access pages
 - Light and dark mode
 - Responsive layout
 
@@ -30,6 +29,7 @@ A professional React + Tailwind CSS prototype for an internal ADRDE meeting agen
 src/
   assets/
   components/
+  config/
   context/
   hooks/
   mockData/
@@ -44,14 +44,16 @@ backend_placeholder/
 
 ## Demo Login
 
-Use any non-empty username and password, then pick a role:
+Use any non-empty Employee ID and password, then pick a role:
 
 | Role | Capabilities (prototype) |
-|------|------------------------|
-| **Admin** | Create/edit/delete meetings, manage users, upload documents |
-| **Para Head** | Approve agendas, view and download reports |
-| **Staff** | View meetings, manage assigned tasks, documents |
-| **Employee** | View meetings, submit suggestions |
+|------|--------------------------|
+| **Para Head** | Approve agendas/letters, manage users, reports, inventory |
+| **Scientist** | Create/edit meetings, upload documents, manage users |
+| **Technical Engineer** | Create meetings, documents, inventory, letters |
+| **Staff** | View meetings, documents, letters, reports, tasks |
+| **Intern** | View meetings, documents, submit suggestions |
+| **Contractual Worker** | Inventory management, view meetings |
 
 ## Run Locally
 

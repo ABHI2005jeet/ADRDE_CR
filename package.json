@@ -1,8 +1,8 @@
 {
-  "name": "adrde-mac-agenda-dashboard",
-  "version": "0.1.0",
+  "name": "adrde-agra-dashboard-portal",
+  "version": "2.0.0",
   "private": true,
-  "description": "Professional React + Tailwind prototype for ADRDE Agra MAC meeting agenda management.",
+  "description": "ADRDE Agra Dashboard Portal — internal monitoring and workflow management prototype.",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
