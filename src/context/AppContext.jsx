@@ -1,213 +1,237 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage.js';
-import { buildUserFromLogin } from '../services/authService.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuth } from './AuthContext.jsx';
+import { useToast } from './ToastContext.jsx';
 import {
-  getDefaultWorkspace,
-  loadSessionUser,
-  loadUserWorkspace,
-  saveSessionUser,
-  saveUserWorkspace,
-} from '../services/userStorage.js';
-import { users as userSeed } from '../mockData/index.js';
+  agendaApi,
+  inventoryApi,
+  letterApi,
+  meetingApi,
+  messageApi,
+  notificationApi,
+  documentApi,
+  userApi,
+  shortcutApi,
+} from '../services/api.js';
+import { getSocket } from '../services/socketService.js';
+import {
+  activities as activitySeed,
+  agendas as agendaSeed,
+  documents as documentSeed,
+  inventoryItems as inventorySeed,
+  letters as letterSeed,
+  meetings as meetingSeed,
+  notifications as notificationSeed,
+} from '../mockData/index.js';
 
 const AppContext = createContext(null);
 
+function mapMeeting(m) {
+  return {
+    id: m._id,
+    meetingId: m.meetingId,
+    title: m.title,
+    description: m.description,
+    date: m.date,
+    time: m.time,
+    venue: m.venue,
+    department: m.department,
+    priority: m.priority,
+    agendaNotes: m.agendaNotes,
+    participants: m.participants || [],
+    attendees: m.participants || [],
+    status: m.status,
+    auditTrail: m.auditTrail || [],
+    createdByName: m.createdByName,
+    reviewedByName: m.reviewedByName,
+    approvedByName: m.approvedByName,
+    rejectionReason: m.rejectionReason,
+  };
+}
+
+function mapAgenda(a) {
+  return {
+    id: a._id,
+    agendaId: a.agendaId,
+    topic: a.topic,
+    department: a.department,
+    priority: a.priority,
+    status: a.status,
+    meetingId: a.meetingId,
+  };
+}
+
+function mapDocument(d) {
+  return {
+    id: d._id,
+    name: d.originalName || d.name,
+    type: d.type,
+    uploadDate: d.createdAt?.slice?.(0, 10) || d.uploadDate,
+    status: d.status,
+    category: d.category,
+    uploadedByName: d.uploadedByName,
+  };
+}
+
+function mapLetter(l) {
+  return {
+    id: l._id,
+    letterId: l.letterId,
+    direction: l.direction,
+    subject: l.subject,
+    reference: l.reference,
+    status: l.status,
+    date: l.date,
+    department: l.department,
+  };
+}
+
+function mapInventory(i) {
+  return {
+    id: i._id,
+    itemId: i.itemId,
+    category: i.category,
+    name: i.name,
+    location: i.location,
+    status: i.status,
+    custodian: i.assignedTo || i.updatedByName,
+    department: i.department,
+    assignedTo: i.assignedTo,
+  };
+}
+
+function mapNotification(n) {
+  return {
+    id: n._id,
+    title: n.title,
+    message: n.message,
+    type: n.type,
+    category: n.category,
+    time: new Date(n.createdAt).toLocaleString('en-IN'),
+    read: n.read,
+  };
+}
+
+function mapActivity(a) {
+  return {
+    id: a._id,
+    text: a.text,
+    actor: a.actor,
+    time: new Date(a.createdAt).toLocaleString('en-IN'),
+  };
+}
+
 export function AppProvider({ children }) {
-  const [theme, setTheme] = useLocalStorage('adrde-theme', 'light');
-  const [currentUser, setCurrentUserState] = useState(() => loadSessionUser());
+  const { user, isAuthenticated } = useAuth();
+  const toast = useToast();
+  const [theme, setTheme] = useState(() => localStorage.getItem('adrde-theme') || 'light');
   const [activePage, setActivePage] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const defaultWorkspace = useMemo(() => getDefaultWorkspace(), []);
-  const [meetings, setMeetings] = useState(defaultWorkspace.meetings);
-  const [agendas, setAgendas] = useState(defaultWorkspace.agendas);
-  const [documents, setDocuments] = useState(defaultWorkspace.documents);
-  const [letters, setLetters] = useState(defaultWorkspace.letters);
-  const [inventory, setInventory] = useState(defaultWorkspace.inventory);
-  const [notifications, setNotifications] = useState(defaultWorkspace.notifications);
-  const [activities, setActivities] = useState(defaultWorkspace.activities);
-  const [users, setUsers] = useState(userSeed);
-
-  const hydratedRef = useRef(false);
-  const skipSaveRef = useRef(false);
-
-  const applyWorkspace = useCallback((workspace) => {
-    skipSaveRef.current = true;
-    setMeetings(workspace.meetings ?? defaultWorkspace.meetings);
-    setAgendas(workspace.agendas ?? defaultWorkspace.agendas);
-    setDocuments(workspace.documents ?? defaultWorkspace.documents);
-    setLetters(workspace.letters ?? defaultWorkspace.letters);
-    setInventory(workspace.inventory ?? defaultWorkspace.inventory);
-    setNotifications(workspace.notifications ?? defaultWorkspace.notifications);
-    setActivities(workspace.activities ?? defaultWorkspace.activities);
-    window.setTimeout(() => {
-      skipSaveRef.current = false;
-    }, 0);
-  }, [defaultWorkspace]);
-
-  const persistWorkspace = useCallback(
-    (employeeId, overrides = {}) => {
-      if (!employeeId) return;
-      saveUserWorkspace(employeeId, {
-        meetings: overrides.meetings ?? meetings,
-        agendas: overrides.agendas ?? agendas,
-        documents: overrides.documents ?? documents,
-        letters: overrides.letters ?? letters,
-        inventory: overrides.inventory ?? inventory,
-        notifications: overrides.notifications ?? notifications,
-        activities: overrides.activities ?? activities,
-      });
-    },
-    [meetings, agendas, documents, letters, inventory, notifications, activities],
-  );
+  const [meetings, setMeetings] = useState(meetingSeed);
+  const [agendas, setAgendas] = useState(agendaSeed);
+  const [documents, setDocuments] = useState(documentSeed);
+  const [letters, setLetters] = useState(letterSeed);
+  const [inventory, setInventory] = useState(inventorySeed);
+  const [notifications, setNotifications] = useState(notificationSeed);
+  const [activities, setActivities] = useState(activitySeed);
+  const [users, setUsers] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [shortcuts, setShortcuts] = useState([]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('adrde-theme', theme);
   }, [theme]);
 
-  useEffect(() => {
-    if (!currentUser?.employeeId || hydratedRef.current) return;
-    const saved = loadUserWorkspace(currentUser.employeeId);
-    applyWorkspace(saved || defaultWorkspace);
-    hydratedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const refreshAll = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    try {
+      const [m, a, d, l, inv, n, act, u, inbox, sc] = await Promise.all([
+        meetingApi.list(),
+        agendaApi.list(),
+        documentApi.list(),
+        letterApi.list(),
+        inventoryApi.list(),
+        notificationApi.list(),
+        userApi.activities(),
+        userApi.list(),
+        messageApi.inbox(),
+        shortcutApi.list(),
+      ]);
+      setMeetings(m.map(mapMeeting));
+      setAgendas(a.length ? a.map(mapAgenda) : agendaSeed);
+      setDocuments(d.map(mapDocument));
+      setLetters(l.map(mapLetter));
+      setInventory(inv.map(mapInventory));
+      setNotifications(n.map(mapNotification));
+      setActivities(act.map(mapActivity));
+      setUsers(u);
+      setMessages(inbox);
+      setShortcuts(sc);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, toast]);
 
   useEffect(() => {
-    if (!currentUser?.employeeId || !hydratedRef.current || skipSaveRef.current) return;
-    saveUserWorkspace(currentUser.employeeId, {
-      meetings,
-      agendas,
-      documents,
-      letters,
-      inventory,
-      notifications,
-      activities,
-    });
-  }, [
-    currentUser?.employeeId,
-    meetings,
-    agendas,
-    documents,
-    letters,
-    inventory,
-    notifications,
-    activities,
-  ]);
+    refreshAll();
+  }, [refreshAll, user?.id]);
 
-  const setCurrentUser = (user) => {
-    setCurrentUserState(user);
-    saveSessionUser(user);
-  };
-
-  const addActivity = useCallback(
-    (text, actor) => {
-      const actorName = actor || currentUser?.name || 'System';
-      setActivities((items) => {
-        const next = [
-          {
-            id: `A-${Date.now()}`,
-            text,
-            actor: actorName,
-            time: formatNow(),
-          },
-          ...items,
-        ];
-        if (currentUser?.employeeId) {
-          persistWorkspace(currentUser.employeeId, { activities: next });
-        }
-        return next;
-      });
-    },
-    [currentUser, persistWorkspace],
-  );
-
-  const login = (credentials) => {
-    const user = buildUserFromLogin(credentials);
-    const saved = loadUserWorkspace(user.employeeId);
-    const workspace = saved || defaultWorkspace;
-    const loginActivity = {
-      id: `A-${Date.now()}`,
-      text: 'User login activity',
-      actor: user.name,
-      time: formatNow(),
-    };
-    const nextWorkspace = {
-      ...workspace,
-      activities: [loginActivity, ...(workspace.activities || [])],
-    };
-    applyWorkspace(nextWorkspace);
-    saveUserWorkspace(user.employeeId, nextWorkspace);
-    hydratedRef.current = true;
-    setCurrentUser(user);
-    setActivePage('dashboard');
-
-    setUsers((list) => {
-      const exists = list.some((entry) => entry.employeeId === user.employeeId);
-      if (exists) {
-        return list.map((entry) =>
-          entry.employeeId === user.employeeId
-            ? { ...entry, name: user.name, role: user.role, department: user.department }
-            : entry,
-        );
-      }
-      return [
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return undefined;
+    const onNotification = (payload) => {
+      setNotifications((items) => [
         {
-          id: `USR-${user.employeeId}`,
-          name: user.name,
-          employeeId: user.employeeId,
-          role: user.role,
-          department: user.department,
-          status: 'Active',
+          id: payload._id || `N-${Date.now()}`,
+          title: payload.title,
+          message: payload.message,
+          type: payload.type,
+          category: payload.category,
+          time: 'Just now',
         },
-        ...list,
-      ];
-    });
+        ...items,
+      ]);
+    };
+    const onMeeting = () => refreshAll();
+    const onMessage = () => refreshAll();
+    socket.on('notification', onNotification);
+    socket.on('notification:broadcast', onNotification);
+    socket.on('meeting:updated', onMeeting);
+    socket.on('message:new', onMessage);
+    return () => {
+      socket.off('notification', onNotification);
+      socket.off('notification:broadcast', onNotification);
+      socket.off('meeting:updated', onMeeting);
+      socket.off('message:new', onMessage);
+    };
+  }, [refreshAll, user?.id]);
+
+  const toggleTheme = () => setTheme((v) => (v === 'dark' ? 'light' : 'dark'));
+
+  const runSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setActivePage('search');
   };
 
-  const logout = () => {
-    if (currentUser?.employeeId) {
-      persistWorkspace(currentUser.employeeId);
-    }
-    setCurrentUser(null);
-    setActivePage('dashboard');
-    setSearchQuery('');
-    hydratedRef.current = false;
-    applyWorkspace(defaultWorkspace);
+  const addActivity = (text, actor) => {
+    setActivities((items) => [
+      { id: `A-${Date.now()}`, text, actor: actor || user?.name || 'System', time: 'Just now' },
+      ...items,
+    ]);
   };
-
-  const switchRole = (role) => {
-    if (!currentUser) return;
-    const updated = buildUserFromLogin({
-      name: currentUser.name,
-      employeeId: currentUser.employeeId,
-      role,
-    });
-    setCurrentUser(updated);
-    addActivity(`Role switched to ${role}`, currentUser.name);
-    setUsers((list) =>
-      list.map((entry) =>
-        entry.employeeId === updated.employeeId
-          ? { ...entry, role: updated.role, department: updated.department }
-          : entry,
-      ),
-    );
-  };
-
-  const runSearch = () => {
-    if (searchQuery.trim()) {
-      setActivePage('search');
-    }
-  };
-
-  const toggleTheme = () => setTheme((value) => (value === 'dark' ? 'light' : 'dark'));
 
   const value = useMemo(
     () => ({
       theme,
-      currentUser,
+      currentUser: user,
       activePage,
       searchQuery,
+      loading,
       meetings,
       agendas,
       documents,
@@ -216,26 +240,38 @@ export function AppProvider({ children }) {
       notifications,
       activities,
       users,
-      login,
-      logout,
-      switchRole,
-      toggleTheme,
+      messages,
+      shortcuts,
       setActivePage,
       setSearchQuery,
       runSearch,
+      toggleTheme,
+      refreshAll,
       setMeetings,
       setAgendas,
       setDocuments,
       setLetters,
       setInventory,
       setNotifications,
+      setMessages,
+      setShortcuts,
       addActivity,
+      meetingApi,
+      documentApi,
+      letterApi,
+      inventoryApi,
+      agendaApi,
+      messageApi,
+      notificationApi,
+      shortcutApi,
+      userApi,
     }),
     [
       theme,
-      currentUser,
+      user,
       activePage,
       searchQuery,
+      loading,
       meetings,
       agendas,
       documents,
@@ -244,26 +280,17 @@ export function AppProvider({ children }) {
       notifications,
       activities,
       users,
+      messages,
+      shortcuts,
+      refreshAll,
     ],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
-function formatNow() {
-  return new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date());
-}
-
 export function useApp() {
   const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used inside AppProvider');
-  }
+  if (!context) throw new Error('useApp must be used inside AppProvider');
   return context;
 }

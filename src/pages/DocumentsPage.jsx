@@ -3,6 +3,7 @@ import PageHeader from '../components/ui/PageHeader.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { can } from '../utils/permissions.js';
 import { formatDate } from '../utils/formatters.js';
 
@@ -21,7 +22,8 @@ const statusTone = {
 };
 
 export default function DocumentsPage({ mode = 'view' }) {
-  const { currentUser, documents, searchQuery, setDocuments, addActivity } = useApp();
+  const { currentUser, documents, searchQuery, documentApi, refreshAll } = useApp();
+  const toast = useToast();
   const fileInputRef = useRef(null);
   const [previewDoc, setPreviewDoc] = useState(null);
 
@@ -43,34 +45,29 @@ export default function DocumentsPage({ mode = 'view' }) {
   const pageTitle =
     mode === 'upload' ? 'Upload Documents' : mode === 'archive' ? 'Document Archive' : 'View Documents';
 
-  const handleUpload = (event) => {
+  const handleUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    const type = allowedTypes[file.type];
-    if (!type) {
-      window.alert('Only PDF, DOC, and image files are supported in this prototype.');
-      return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await documentApi.upload(formData);
+      toast.success('Document uploaded');
+      refreshAll();
+    } catch (error) {
+      toast.error(error.message);
     }
-
-    const newDoc = {
-      id: `DOC-${Date.now().toString().slice(-3)}`,
-      name: file.name,
-      type,
-      uploadDate: new Date().toISOString().slice(0, 10),
-      status: 'Pending',
-    };
-
-    setDocuments((items) => [newDoc, ...items]);
-    addActivity(`Document uploaded: ${file.name}`, currentUser.name);
     event.target.value = '';
   };
 
-  const archiveDoc = (docId) => {
-    setDocuments((items) =>
-      items.map((doc) => (doc.id === docId ? { ...doc, status: 'Archived' } : doc)),
-    );
-    addActivity('Document archived', currentUser.name);
+  const archiveDoc = async (docId) => {
+    try {
+      await documentApi.archive(docId);
+      toast.success('Document archived');
+      refreshAll();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const downloadDoc = (doc) => {

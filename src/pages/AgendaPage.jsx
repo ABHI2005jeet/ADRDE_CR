@@ -6,6 +6,7 @@ import PageHeader from '../components/ui/PageHeader.jsx';
 import PermissionNotice from '../components/ui/PermissionNotice.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { priorityTone } from '../utils/formatters.js';
+import { useToast } from '../context/ToastContext.jsx';
 import { can } from '../utils/permissions.js';
 
 const statusTone = {
@@ -15,7 +16,8 @@ const statusTone = {
 };
 
 export default function AgendaPage() {
-  const { addActivity, agendas, currentUser, setAgendas } = useApp();
+  const { agendas, currentUser, agendaApi, refreshAll } = useApp();
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('All');
   const [priority, setPriority] = useState('All');
@@ -31,9 +33,14 @@ export default function AgendaPage() {
     });
   }, [agendas, priority, query, status]);
 
-  const approveAgenda = (agendaId) => {
-    setAgendas((items) => items.map((agenda) => (agenda.id === agendaId ? { ...agenda, status: 'Approved' } : agenda)));
-    addActivity(`Agenda ${agendaId} approved`, currentUser.name);
+  const approveAgenda = async (agendaId) => {
+    try {
+      await agendaApi.approve(agendaId);
+      toast.success('Agenda approved');
+      refreshAll();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (

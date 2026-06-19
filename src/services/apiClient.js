@@ -1,21 +1,40 @@
-/**
- * Placeholder API client for future backend integration.
- * Replace BASE_URL and implement real fetch calls against backend_placeholder/api routes.
- */
+import axios from 'axios';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-export async function apiGet(path) {
-  const response = await fetch(`${BASE_URL}${path}`);
-  if (!response.ok) throw new Error(`GET ${path} failed`);
-  return response.json();
+export const api = axios.create({
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adrde-token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = error.response?.data?.message || error.message || 'Request failed';
+    return Promise.reject(new Error(message));
+  },
+);
+
+export async function checkApiHealth() {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/health`, { timeout: 3000 });
+    return data?.status === 'ok';
+  } catch {
+    return false;
+  }
 }
 
-export async function apiPost(path, body) {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`POST ${path} failed`);
-  return response.json();
+export function setAuthToken(token) {
+  if (token) localStorage.setItem('adrde-token', token);
+  else localStorage.removeItem('adrde-token');
+}
+
+export function getAuthToken() {
+  return localStorage.getItem('adrde-token');
 }

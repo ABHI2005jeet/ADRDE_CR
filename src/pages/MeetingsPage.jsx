@@ -4,198 +4,167 @@ import Button from '../components/ui/Button.jsx';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import PermissionNotice from '../components/ui/PermissionNotice.jsx';
 import { useApp } from '../context/AppContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { formatDate, priorityTone } from '../utils/formatters.js';
 import { can } from '../utils/permissions.js';
 
 const emptyForm = {
-  id: '',
+  meetingId: '',
   title: '',
   date: '',
   time: '',
   venue: '',
+  department: '',
   priority: 'Medium',
   description: '',
+  agendaNotes: '',
+  participants: '',
+};
+
+const statusTone = {
+  Draft: 'neutral',
+  'Under Review': 'info',
+  'Pending Approval': 'warning',
+  Approved: 'success',
+  Rejected: 'danger',
+  Published: 'success',
 };
 
 export default function MeetingsPage({ mode = 'all' }) {
-  const { addActivity, currentUser, meetings, searchQuery, setMeetings } = useApp();
+  const { currentUser, meetings, searchQuery, meetingApi, refreshAll } = useApp();
+  const toast = useToast();
   const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
   const canCreate = can(currentUser, 'create_meeting');
-  const canEdit = can(currentUser, 'edit_meeting');
-  const canDelete = can(currentUser, 'delete_meeting');
 
-  const today = new Date('2026-05-23T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const query = searchQuery.trim().toLowerCase();
 
-  const sortedMeetings = useMemo(() => {
-    return [...meetings]
-      .filter((meeting) => {
-        if (mode === 'upcoming' && new Date(`${meeting.date}T00:00:00`) < today) return false;
-        if (!query) return true;
-        const haystack = `${meeting.id} ${meeting.title} ${meeting.venue} ${meeting.description}`.toLowerCase();
-        return haystack.includes(query);
-      })
-      .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-  }, [meetings, mode, query, today]);
+  const sortedMeetings = useMemo(
+    () =>
+      [...meetings]
+        .filter((meeting) => {
+          if (mode === 'upcoming' && new Date(`${meeting.date}T00:00:00`) < today) return false;
+          if (!query) return true;
+          const haystack = `${meeting.meetingId || meeting.id} ${meeting.title} ${meeting.venue} ${meeting.description}`.toLowerCase();
+          return haystack.includes(query);
+        })
+        .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`)),
+    [meetings, mode, query, today],
+  );
 
-  const showForm = mode === 'create' || mode === 'all';
+  const showForm = mode === 'create';
   const pageTitle =
     mode === 'create' ? 'Create Meeting' : mode === 'upcoming' ? 'Upcoming Meetings' : 'Meeting Management';
 
   const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
-  const resetForm = () => {
-    setForm(emptyForm);
-    setEditingId(null);
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!canCreate && !editingId) return;
-    if (!canEdit && editingId) return;
-
-    if (editingId) {
-      setMeetings((items) => items.map((meeting) => (meeting.id === editingId ? { ...meeting, ...form } : meeting)));
-      addActivity(`Meeting ${editingId} updated`, currentUser.name);
-    } else {
-      setMeetings((items) => [
-        {
-          ...form,
-          attendees: ['MAC Secretariat', currentUser.department],
-        },
-        ...items,
-      ]);
-      addActivity(`Meeting #${form.id.replace(/\D/g, '').slice(-3) || form.id} created`, currentUser.name);
+    if (!canCreate) return;
+    try {
+      await meetingApi.create({
+        meetingId: form.meetingId,
+        title: form.title,
+        date: form.date,
+        time: form.time,
+        venue: form.venue,
+        department: form.department || currentUser.department,
+        priority: form.priority,
+        description: form.description,
+        agendaNotes: form.agendaNotes,
+        participants: form.participants.split(',').map((p) => p.trim()).filter(Boolean),
+      });
+      toast.success('Meeting created');
+      setForm(emptyForm);
+      refreshAll();
+    } catch (error) {
+      toast.error(error.message);
     }
-
-    resetForm();
   };
 
-  const startEdit = (meeting) => {
-    setEditingId(meeting.id);
-    setForm({
-      id: meeting.id,
-      title: meeting.title,
-      date: meeting.date,
-      time: meeting.time,
-      venue: meeting.venue,
-      priority: meeting.priority,
-      description: meeting.description,
-    });
-  };
-
-  const deleteMeeting = (meetingId) => {
-    setMeetings((items) => items.filter((meeting) => meeting.id !== meetingId));
-    addActivity(`Meeting ${meetingId} deleted`, currentUser.name);
-    if (editingId === meetingId) resetForm();
+  const runAction = async (id, action, note = '') => {
+    try {
+      await meetingApi.action(id, { action, note });
+      toast.success(`Meeting ${action.replace('_', ' ')}`);
+      refreshAll();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
     <div className="animate-fade-in">
-      <PageHeader
-        description="Create, update, and maintain meeting schedules with priority and venue details."
-        eyebrow="Scheduling"
-        title={pageTitle}
-      />
-
-      {!canCreate && showForm ? (
-        <PermissionNotice>Meeting creation is available to Scientist and Technical Engineer roles in this prototype.</PermissionNotice>
-      ) : null}
+      <PageHeader description="Meeting workflow: Staff creates → Scientist reviews → Para Head approves → Published." eyebrow="Scheduling" title={pageTitle} />
+      {!canCreate && showForm ? <PermissionNotice>Your role cannot create meetings.</PermissionNotice> : null}
 
       <section className={`mt-6 grid gap-6 ${showForm ? 'xl:grid-cols-[0.9fr_1.1fr]' : ''}`}>
-        {showForm ? (
-        <form className="surface p-5" onSubmit={handleSubmit}>
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-950 dark:text-white">
-              {editingId ? 'Edit Meeting' : 'Create Meeting'}
-            </h2>
-            {editingId ? (
-              <Button onClick={resetForm} size="sm" type="button" variant="secondary">
-                Cancel
-              </Button>
-            ) : null}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="label mb-2 block">Meeting ID</span>
-              <input className="field" onChange={(event) => updateField('id', event.target.value)} required value={form.id} />
-            </label>
-            <label className="block">
-              <span className="label mb-2 block">Priority</span>
-              <select className="field" onChange={(event) => updateField('priority', event.target.value)} value={form.priority}>
-                {['Critical', 'High', 'Medium', 'Low'].map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="label mb-2 block">Meeting Title</span>
-              <input className="field" onChange={(event) => updateField('title', event.target.value)} required value={form.title} />
-            </label>
-            <label className="block">
-              <span className="label mb-2 block">Date</span>
-              <input className="field" onChange={(event) => updateField('date', event.target.value)} required type="date" value={form.date} />
-            </label>
-            <label className="block">
-              <span className="label mb-2 block">Time</span>
-              <input className="field" onChange={(event) => updateField('time', event.target.value)} required type="time" value={form.time} />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="label mb-2 block">Venue</span>
-              <input className="field" onChange={(event) => updateField('venue', event.target.value)} required value={form.venue} />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="label mb-2 block">Description</span>
-              <textarea
-                className="field min-h-28 resize-y"
-                onChange={(event) => updateField('description', event.target.value)}
-                required
-                value={form.description}
-              />
-            </label>
-          </div>
-
-          <Button
-            className="mt-5 w-full sm:w-auto"
-            disabled={editingId ? !canEdit : !canCreate}
-            icon={editingId ? 'edit' : 'plus'}
-            type="submit"
-          >
-            {editingId ? 'Update' : 'Create'}
-          </Button>
-        </form>
+        {showForm && canCreate ? (
+          <form className="surface p-5" onSubmit={handleSubmit}>
+            <h2 className="text-base font-semibold">Create Meeting</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                ['Meeting ID', 'meetingId'],
+                ['Title', 'title'],
+                ['Date', 'date'],
+                ['Time', 'time'],
+                ['Venue', 'venue'],
+                ['Department', 'department'],
+              ].map(([label, key]) => (
+                <label key={key} className="block">
+                  <span className="label mb-2 block">{label}</span>
+                  <input className="field" required={key !== 'department'} type={key === 'date' ? 'date' : key === 'time' ? 'time' : 'text'} value={form[key]} onChange={(e) => updateField(key, e.target.value)} />
+                </label>
+              ))}
+              <label className="block sm:col-span-2">
+                <span className="label mb-2 block">Participants (comma separated)</span>
+                <input className="field" value={form.participants} onChange={(e) => updateField('participants', e.target.value)} />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="label mb-2 block">Description</span>
+                <textarea className="field min-h-24" required value={form.description} onChange={(e) => updateField('description', e.target.value)} />
+              </label>
+            </div>
+            <Button className="mt-4" icon="plus" type="submit">Create</Button>
+          </form>
         ) : null}
 
         <section className="space-y-4">
           {sortedMeetings.map((meeting) => (
             <article key={meeting.id} className="surface p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <Badge tone={priorityTone(meeting.priority)}>{meeting.priority}</Badge>
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{meeting.id}</span>
+                    <Badge tone={statusTone[meeting.status] || 'neutral'}>{meeting.status}</Badge>
+                    <span className="text-xs font-semibold text-slate-500">{meeting.meetingId || meeting.id}</span>
                   </div>
-                  <h2 className="text-lg font-semibold text-slate-950 dark:text-white">{meeting.title}</h2>
+                  <h2 className="text-lg font-semibold">{meeting.title}</h2>
                   <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{meeting.description}</p>
-                  <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">
-                    {formatDate(meeting.date)} | {meeting.time} | {meeting.venue}
-                  </p>
+                  <p className="mt-3 text-sm">{formatDate(meeting.date)} | {meeting.time} | {meeting.venue}</p>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <Button disabled={!canEdit} icon="edit" onClick={() => startEdit(meeting)} size="sm" variant="secondary">
-                    Edit
-                  </Button>
-                  <Button disabled={!canDelete} icon="trash" onClick={() => deleteMeeting(meeting.id)} size="sm" variant="danger">
-                    Delete
-                  </Button>
+                <div className="flex flex-wrap gap-2">
+                  {meeting.status === 'Draft' ? <Button onClick={() => runAction(meeting.id, 'submit_review')} size="sm" variant="secondary">Submit for review</Button> : null}
+                  {can(currentUser, 'review_meeting') && meeting.status === 'Under Review' ? (
+                    <>
+                      <Button onClick={() => runAction(meeting.id, 'review')} size="sm">Review</Button>
+                      <Button onClick={() => runAction(meeting.id, 'request_changes', 'Please update agenda')} size="sm" variant="secondary">Request changes</Button>
+                    </>
+                  ) : null}
+                  {can(currentUser, 'approve_meeting') && meeting.status === 'Pending Approval' ? (
+                    <>
+                      <Button onClick={() => runAction(meeting.id, 'approve')} size="sm">Approve</Button>
+                      <Button onClick={() => runAction(meeting.id, 'reject', 'Rejected')} size="sm" variant="danger">Reject</Button>
+                    </>
+                  ) : null}
+                  {can(currentUser, 'approve_meeting') && meeting.status === 'Approved' ? (
+                    <Button onClick={() => runAction(meeting.id, 'publish')} size="sm">Publish</Button>
+                  ) : null}
                 </div>
               </div>
             </article>
           ))}
+          {!sortedMeetings.length ? <div className="surface p-6 text-sm text-slate-500">No meetings found.</div> : null}
         </section>
       </section>
     </div>

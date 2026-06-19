@@ -70,6 +70,15 @@ export const portalNavigation = [
       { label: 'Messages', page: 'notifications-messages' },
     ],
   },
+  {
+    id: 'inbox',
+    label: 'Inbox',
+    children: [
+      { label: 'Internal Mail', page: 'inbox-mail' },
+      { label: 'Chats', page: 'inbox-chats' },
+      { label: 'Team Messages', page: 'inbox-team' },
+    ],
+  },
 ];
 
 export function getNavSection(activePage) {
@@ -86,6 +95,7 @@ export function getNavSection(activePage) {
   }
   if (activePage.startsWith('reports')) return 'reports';
   if (activePage.startsWith('notifications')) return 'notifications';
-  if (activePage === 'agendas') return 'home';
+  if (activePage.startsWith('inbox')) return 'inbox';
+  if (activePage.startsWith('lan-') || activePage === 'admin-settings' || activePage === 'settings') return 'home';
   return null;
 }

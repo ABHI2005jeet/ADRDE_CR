@@ -12,6 +12,10 @@ import ReportsPage from '../pages/ReportsPage.jsx';
 import TimelinePage from '../pages/TimelinePage.jsx';
 import UsersPage from '../pages/UsersPage.jsx';
 import SearchPage from '../pages/SearchPage.jsx';
+import InboxPage from '../pages/InboxPage.jsx';
+import LanModulePage from '../pages/LanModulePage.jsx';
+import AdminSettingsPage from '../pages/AdminSettingsPage.jsx';
+import SettingsPage from '../pages/SettingsPage.jsx';
 
 export function resolvePage(activePage) {
   if (activePage === 'search') return SearchPage;
@@ -45,6 +49,14 @@ export function resolvePage(activePage) {
   if (activePage.startsWith('notifications')) {
     return () => <NotificationsPage filter={activePage.replace('notifications-', '')} />;
   }
+  if (activePage.startsWith('inbox')) {
+    return () => <InboxPage mode={activePage.replace('inbox-', '')} />;
+  }
+  if (activePage.startsWith('lan-')) {
+    return () => <LanModulePage moduleKey={activePage.replace('lan-', '')} />;
+  }
+  if (activePage === 'admin-settings') return AdminSettingsPage;
+  if (activePage === 'settings') return SettingsPage;
   if (activePage === 'profile') return ProfilePage;
   return DashboardPage;
 }

@@ -1,85 +1,35 @@
 export const rolePermissions = {
-  'Para Head': [
-    'view_meetings',
-    'manage_users',
-    'approve_agenda',
-    'approve_letter',
-    'preview_document',
-    'view_reports',
-    'download_reports',
-    'view_notifications',
-    'manage_inventory',
-  ],
-  Scientist: [
-    'view_meetings',
-    'create_meeting',
-    'edit_meeting',
-    'delete_meeting',
-    'manage_users',
-    'upload_document',
-    'preview_document',
-    'download_document',
-    'view_reports',
-    'download_reports',
-    'create_letter',
-    'view_notifications',
-  ],
-  'Technical Engineer': [
-    'view_meetings',
-    'create_meeting',
-    'upload_document',
-    'preview_document',
-    'download_document',
-    'manage_inventory',
-    'create_letter',
-    'view_tasks',
-    'view_notifications',
-  ],
-  Staff: [
-    'view_meetings',
-    'preview_document',
-    'download_document',
-    'create_letter',
-    'view_reports',
-    'view_notifications',
-    'view_tasks',
-    'manage_tasks',
-  ],
-  Intern: [
-    'view_meetings',
-    'preview_document',
-    'view_notifications',
-    'submit_suggestion',
-  ],
-  'Contractual Worker': [
-    'view_meetings',
-    'manage_inventory',
-    'view_notifications',
-  ],
+  Admin: ['all'],
+  'Para Head': ['approve_meeting', 'approve_agenda', 'view_reports', 'download_reports', 'view_meetings', 'create_letter', 'manage_users'],
+  Scientist: ['create_meeting', 'review_meeting', 'upload_document', 'view_reports', 'download_reports', 'create_letter', 'view_meetings'],
+  'Technical Officer': ['create_meeting', 'upload_document', 'manage_inventory', 'create_letter', 'view_meetings', 'manage_tasks'],
+  Staff: ['create_meeting', 'view_meetings', 'view_tasks', 'manage_tasks', 'create_letter', 'preview_document'],
+  'Contractual Worker': ['view_meetings', 'manage_inventory'],
+  Intern: ['view_meetings', 'preview_document', 'submit_suggestion'],
 };
 
 export function can(user, permission) {
   if (!user) return false;
-  return rolePermissions[user.role]?.includes(permission) || false;
+  const perms = rolePermissions[user.role] || [];
+  if (perms.includes('all')) return true;
+  return perms.includes(permission);
 }
 
 export const permissionLabels = {
+  all: 'Full access',
   view_meetings: 'View meetings',
   create_meeting: 'Create meetings',
-  edit_meeting: 'Edit meetings',
-  delete_meeting: 'Delete meetings',
-  manage_users: 'Manage users',
+  review_meeting: 'Review meetings',
+  approve_meeting: 'Approve meetings',
   upload_document: 'Upload documents',
   preview_document: 'Preview documents',
-  download_document: 'Download documents',
   approve_agenda: 'Approve agendas',
-  approve_letter: 'Approve letters',
   create_letter: 'Create letters',
   manage_inventory: 'Manage inventory',
   view_reports: 'View reports',
   download_reports: 'Download reports',
   view_tasks: 'View tasks',
-  manage_tasks: 'Manage assigned tasks',
+  manage_tasks: 'Manage tasks',
   submit_suggestion: 'Submit suggestions',
-  view_notifications: 'View notifications',
+  manage_users: 'Manage users',
 };

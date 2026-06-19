@@ -1,73 +1,126 @@
-# ADRDE Agra Dashboard Portal
+# ADRDE Agra Internal Dashboard Portal
 
-A professional React + Tailwind CSS prototype for the ADRDE Agra internal monitoring and workflow management portal. The app uses mock JSON-style data only and includes backend placeholder folders for future API integration.
+Enterprise-style internal workflow portal for ADRDE Agra — React frontend with Node.js/Express/MongoDB backend, JWT auth, Socket.IO notifications, and role-based access.
+
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React, Vite, Tailwind CSS, React Router, Axios, Recharts, Socket.IO Client |
+| Backend | Node.js, Express, MongoDB Atlas, JWT, bcrypt, Multer, Socket.IO |
+| Deploy | Vercel (frontend), Render (backend), MongoDB Atlas |
 
 ## Features
 
-- Dummy login with Employee ID, password, and role selection
-- Role-aware navigation, actions, and mock role switching from profile
-- Horizontal government-style top navigation with dropdown menus
-- Dashboard metrics, charts, notifications, calendar, timeline, and activity feed
-- Working mock flows: meeting create, document upload, letters, inventory, search/filters
-- Agenda search, filters, and approval workflow
-- Letters (incoming, outgoing, draft) and inventory modules
-- User management, roles, and permissions views
-- Downloadable PDF-style meeting report generator
-- Light and dark mode
-- Responsive layout
+- Registration, login, forgot/reset password (mock email when SMTP not configured)
+- JWT sessions with role-based access (Admin, Para Head, Scientist, Technical Officer, Staff, Contractual Worker, Intern)
+- Meeting workflow: Draft → Under Review → Pending Approval → Approved → Published
+- Documents, letters, inventory, agendas, reports, internal inbox/messaging
+- Realtime notifications via Socket.IO
+- Global search across modules
+- ADRDE LAN Portal shortcut tiles (admin-configurable)
+- Admin settings: users, shortcuts, roles
 
-## Tech Stack
+## Default Admin (seeded on backend start)
 
-- React
-- Tailwind CSS
-- Vite
-- Mock local data, no backend/database
+- **Name:** Abhijeet Kumar
+- **Email:** dhirendrakumar8594@gmail.com
+- **Password:** `Admin@123` (change after first login)
 
-## Project Structure
+## Local Setup
 
-```text
-src/
-  assets/
-  components/
-  config/
-  context/
-  hooks/
-  mockData/
-  pages/
-  services/
-  utils/
-backend_placeholder/
-  api/
-  controllers/
-  models/
-```
+### 1. MongoDB Atlas
 
-## Demo Login
+Create a free cluster and copy the connection string.
 
-Use any non-empty Employee ID and password, then pick a role:
-
-| Role | Capabilities (prototype) |
-|------|--------------------------|
-| **Para Head** | Approve agendas/letters, manage users, reports, inventory |
-| **Scientist** | Create/edit meetings, upload documents, manage users |
-| **Technical Engineer** | Create meetings, documents, inventory, letters |
-| **Staff** | View meetings, documents, letters, reports, tasks |
-| **Intern** | View meetings, documents, submit suggestions |
-| **Contractual Worker** | Inventory management, view meetings |
-
-## Run Locally
+### 2. Backend
 
 ```bash
+cd backend
+cp .env.example .env
+# Edit .env — set MONGODB_URI, JWT_SECRET, CLIENT_URL=http://localhost:5173
 npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal (typically `http://localhost:5173`).
+API runs at `http://localhost:5000`
 
-## Build
+### 3. Frontend
 
 ```bash
-npm run build
+cd ..
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-The Vite config uses a relative base path, so the static build is friendly to Vercel and GitHub Pages style hosting.
+Open `http://localhost:5173`
+
+## Environment Variables
+
+### Frontend (`.env`)
+
+```
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+### Backend (`backend/.env`)
+
+See `backend/.env.example`
+
+## Deployment
+
+### Vercel (Frontend)
+
+1. Import GitHub repo
+2. Build command: `npm run build`
+3. Output directory: `dist`
+4. Environment: `VITE_API_BASE_URL=https://your-render-app.onrender.com/api`
+5. Environment: `VITE_SOCKET_URL=https://your-render-app.onrender.com`
+
+### Render (Backend)
+
+1. New Web Service → connect repo
+2. Root directory: `backend`
+3. Build: `npm install`
+4. Start: `npm start`
+5. Add env vars from `backend/.env.example`
+6. Set `CLIENT_URL` to your Vercel URL
+
+### MongoDB Atlas
+
+- Allow network access for Render IP or `0.0.0.0/0` (dev)
+- Use connection string in `MONGODB_URI`
+
+## Project Structure
+
+```
+src/                 # React frontend
+backend/
+  controllers/
+  models/
+  routes/
+  middleware/
+  uploads/
+  utils/
+  server.js
+```
+
+## API Overview
+
+- `POST /api/auth/register` — Register
+- `POST /api/auth/login` — Login
+- `POST /api/auth/forgot-password` — Reset link (mock in dev)
+- `GET /api/meetings` — Meetings CRUD + workflow actions
+- `GET /api/documents` — Document upload/download/archive
+- `GET /api/notifications` — Notifications
+- `GET /api/messages` — Internal mail
+- `GET /api/search` — Global search
+- `GET /api/shortcuts` — LAN portal modules
+
+## Notes
+
+- UI theme and navbar layout are preserved from the existing ADRDE dashboard design.
+- Uploads stored in `backend/uploads/` until cloud storage is integrated.
+- Email service uses mock preview mode when SMTP is not configured.

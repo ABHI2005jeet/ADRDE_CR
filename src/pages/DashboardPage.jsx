@@ -12,7 +12,7 @@ import { departmentParticipation, monthlyMeetingTrend } from '../mockData/index.
 import { can, permissionLabels, rolePermissions } from '../utils/permissions.js';
 
 export default function DashboardPage() {
-  const { activities, agendas, currentUser, documents, meetings, notifications, setActivePage } = useApp();
+  const { activities, agendas, currentUser, documents, meetings, notifications, setActivePage, shortcuts } = useApp();
   const today = new Date('2026-05-23T00:00:00');
   const upcomingMeetings = meetings.filter((meeting) => new Date(`${meeting.date}T00:00:00`) >= today).length;
   const participants = new Set(meetings.flatMap((meeting) => meeting.attendees)).size;
@@ -70,6 +70,28 @@ export default function DashboardPage() {
         <Button icon="bell" onClick={() => setActivePage('notifications-alerts')} size="sm" variant="secondary">
           View Notifications
         </Button>
+      </section>
+
+      <section className="mt-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-slate-950 dark:text-white">ADRDE LAN Portal Services</h2>
+          {currentUser?.role === 'Admin' ? (
+            <Button onClick={() => setActivePage('admin-settings')} size="sm" variant="secondary">Manage shortcuts</Button>
+          ) : null}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {shortcuts.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className="surface p-4 text-left transition duration-200 hover:border-adrde-blue/40 hover:shadow-md"
+              onClick={() => setActivePage(`lan-${item.key}`)}
+            >
+              <p className="text-sm font-semibold text-slate-950 dark:text-white">{item.title}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-slate-500">{item.description}</p>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
